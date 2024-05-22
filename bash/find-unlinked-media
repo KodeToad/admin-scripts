@@ -1,0 +1,15 @@
+#!/bin/bash
+## Author: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMLH703MTvBQotnbI51WMnFpi+ExjceBGFE5B3ix6EPz 3880336+KodeToad@users.noreply.github.com
+
+# Solves find: 'ls' terminated by signal 13 when less or tail are included in the script 
+
+IGNORE="txt|srt|jpg|sub|png|xml|idx|nfo|parts|exe|url|zip|7z|rar|doc|docx|bak|sqlite|jpeg|log|m3u|cue|ini"
+
+function lspipe { # For some reason multi threaded systems sometimes can't signal a closed pipe to find -exec
+        ls -ixgGh --time-style=+ "$1" | sed -E 's/^([0-9]+) [^ ]+ +[0-9]+ +([^ ]+) +(.*)/printf "%6s %6s %s" \1 \2 "\3"/e';
+        [[ $? -eq 141 ]] && kill -SIGPIPE $PPID # This causes find to terminate as soon as the pipe is closed by less
+}
+
+export -f lspipe
+
+find . -regextype posix-egrep -iregex ".*\.($IGNORE)$" -prune -o \( -type f -links 1 -exec bash -c "lspipe \"{}\"" \; \) | less
